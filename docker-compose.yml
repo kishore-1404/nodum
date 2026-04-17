@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: nodum-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nodum
+      POSTGRES_USER: nodum
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nodum_dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nodum"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Rust backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nodum-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODUM_DATABASE_URL: postgres://nodum:${DB_PASSWORD:-nodum_dev_password}@postgres:5432/nodum
+      NODUM_HOST: 0.0.0.0
+      NODUM_PORT: 8080
+      NODUM_JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      NODUM_CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      NODUM_OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      NODUM_GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      NODUM_UPLOAD_DIR: /data/uploads
+      RUST_LOG: nodum=info,tower_http=debug
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/data/uploads
+
+  # Frontend (dev mode — use nginx in production)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nodum-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  pgdata:
+  uploads:

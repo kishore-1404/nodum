@@ -1,0 +1,33 @@
+# Rust
+/backend/target/
+**/*.rs.bk
+
+# Node
+/frontend/node_modules/
+/frontend/dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Uploads
+/uploads/
+/data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+pgdata/
+
+# Logs
+*.log
